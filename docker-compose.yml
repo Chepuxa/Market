@@ -1,0 +1,99 @@
+version: "3.8"
+
+services:
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    depends_on:
+      - app_db
+      - keycloak
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://app_db:${APP_DB_EXTERNAL_PORT}/${APP_DB}
+      SPRING_DATASOURCE_USERNAME: ${APP_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      KEYCLOAK_REALM_CERT_URL: http://keycloak:${KEYCLOAK_INTERNAL_PORT}/auth/realms/store/protocol/openid-connect/certs
+      LOGIN_URL: http://keycloak:${KEYCLOAK_INTERNAL_PORT}/auth/realms/store/protocol/openid-connect/token
+      ADMIN_URL: http://keycloak:${KEYCLOAK_INTERNAL_PORT}/auth/admin/realms/store
+      ROOT_ID: ${ROOT_ID}
+      ROOT_SECRET: ${ROOT_SECRET}
+    ports:
+      - "${APP_EXTERNAL_PORT}:${APP_INTERNAL_PORT}"
+    volumes:
+      - ./src:/src
+    restart: unless-stopped
+    networks:
+      - local
+
+  app_db:
+    expose:
+      - ${APP_DB_EXTERNAL_PORT}
+    container_name: app_db
+    image: postgres:13.1-alpine
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${APP_DB_USER}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD}
+      POSTGRES_DB: ${APP_DB}
+    ports:
+      - "${APP_DB_EXTERNAL_PORT}:${APP_DB_INTERNAL_PORT}"
+    volumes:
+      - app_db:/var/lib/postgresql/data
+    restart: unless-stopped
+    command: -p ${APP_DB_EXTERNAL_PORT}
+    networks:
+      - local
+
+  keycloak_db:
+    expose:
+      - ${KEYCLOAK_DB_EXTERNAL_PORT}
+    container_name: keycloak_db
+    image: library/postgres
+    environment:
+      POSTGRES_USER: ${KEYCLOAK_DB_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      POSTGRES_DB: ${KEYCLOAK_DB}
+    ports:
+      - "${KEYCLOAK_DB_EXTERNAL_PORT}:${KEYCLOAK_DB_INTERNAL_PORT}"
+    volumes:
+      - keycloak_db:/var/lib/postgresql/data
+    restart: unless-stopped
+    command: -p ${KEYCLOAK_DB_EXTERNAL_PORT}
+    networks:
+      - local
+
+  keycloak:
+    container_name: keycloak
+    image: jboss/keycloak
+    volumes:
+      - ./src/main/resources/keycloak:/tmp/import
+    environment:
+      KEYCLOAK_IMPORT: /tmp/import/realm.json
+      DB_VENDOR: ${KEYCLOAK_DB_VENDOR}
+      DB_ADDR: ${KEYCLOAK_DB}
+      DB_PORT: ${KEYCLOAK_DB_EXTERNAL_PORT}
+      DB_DATABASE: ${KEYCLOAK_DB}
+      DB_USER: ${KEYCLOAK_DB_USER}
+      DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KEYCLOAK_USER: ${KEYCLOAK_USER}
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
+    ports:
+      - "${KEYCLOAK_EXTERNAL_PORT}:${KEYCLOAK_INTERNAL_PORT}"
+    depends_on:
+      - keycloak_db
+    restart: unless-stopped
+    networks:
+      - local
+
+networks:
+  local:
+    driver: bridge
+
+volumes:
+  app_db:
+  keycloak_db:
