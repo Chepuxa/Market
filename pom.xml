@@ -11,7 +11,7 @@
 	<groupId>com.demo</groupId>
 	<artifactId>market</artifactId>
 	<version>1.0-RELEASE</version>
-	<name>store</name>
+	<name>market</name>
 	<description>Market project</description>
 	<properties>
 		<java.version>11</java.version>
