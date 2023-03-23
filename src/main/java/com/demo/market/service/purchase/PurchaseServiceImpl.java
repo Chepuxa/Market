@@ -1,7 +1,9 @@
 package com.demo.market.service.purchase;
 
+import com.demo.market.dto.Auth;
 import com.demo.market.dto.purchase.PurchaseResponse;
 import com.demo.market.entity.Purchase;
+import com.demo.market.entity.User;
 import com.demo.market.enums.ActiveStatus;
 import com.demo.market.enums.Role;
 import com.demo.market.enums.Type;
@@ -41,20 +43,25 @@ public class PurchaseServiceImpl implements PurchaseService {
     private Long refundTime;
 
     @Override
-    public Set<PurchaseResponse> getAll(String userId) {
-        return userRepository.findById(userId)
-                .map(usr -> purchaseMapper.toDtoSet(purchaseRepository.findByUserId(userId)))
-                .orElseThrow(() -> new ItemNotFound(Type.USER));
+    public Set<PurchaseResponse> getAll(Auth auth) {
+        return userRepository.findById(auth.getUserId())
+                .map(usr -> purchaseMapper.toDtoSet(purchaseRepository.findByUserId(auth.getUserId())))
+                .orElseThrow(InsufficientRights::new);
     }
 
     @Override
-    public PurchaseResponse get(Long purchaseId, String userId, Set<String> roles) {
+    public Set<PurchaseResponse> getAllByUser(String userId) {
+        return purchaseMapper.toDtoSet(purchaseRepository.findByUserId(userId));
+    }
+
+    @Override
+    public PurchaseResponse get(Auth auth, Long purchaseId) {
         Purchase purchase;
-        if (!roles.contains(Role.ADMIN.withPrefix())) {
-            userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+        if (!auth.getUserRoles().contains(Role.ADMIN.withPrefix())) {
+            userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                     .orElseThrow(InsufficientRights::new);
             purchase = purchaseRepository.findById(purchaseId).orElseThrow(() -> new ItemNotFound(Type.PURCHASE));
-            if (!Objects.equals(purchase.getUser().getId(), userId)) {
+            if (!Objects.equals(purchase.getUser().getId(), auth.getUserId())) {
                 throw new InsufficientRights();
             }
         } else {
@@ -64,18 +71,25 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     @Override
-    public PurchaseResponse refund(Long purchaseId, String userId, Set<String> roles) {
+    public PurchaseResponse refund(Auth auth, Long purchaseId) {
         Purchase purchase;
-        if (!roles.contains(Role.ADMIN.withPrefix())) {
-            userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+        if (!auth.getUserRoles().contains(Role.ADMIN.withPrefix())) {
+            User user = userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                     .orElseThrow(InsufficientRights::new);
             purchase = purchaseRepository.findById(purchaseId).orElseThrow(() -> new ItemNotFound(Type.PURCHASE));
-            if (!Objects.equals(purchase.getUser().getId(), userId)) {
+            if (!Objects.equals(purchase.getUser().getId(), auth.getUserId())) {
                 throw new InsufficientRights();
             }
             if (Timestamp.from(Instant.now().minus(refundTime, ChronoUnit.HOURS)).after(purchase.getBuyTime())) {
                 throw new RefundTimeExpired();
             }
+            user.setBalance(user.getBalance() + purchase.getPriceWithDiscount());
+            userRepository.save(user);
+            productRepository.findById(purchase.getProductId())
+                    .ifPresent(prd -> {
+                        prd.setAmount(prd.getAmount() + 1);
+                        productRepository.save(prd);
+                    });
         } else {
             purchase = purchaseRepository.findById(purchaseId).orElseThrow(() -> new ItemNotFound(Type.PURCHASE));
         }

@@ -1,5 +1,6 @@
 package com.demo.market.service.user;
 
+import com.demo.market.dto.Auth;
 import com.demo.market.dto.auth.KeycloakUser;
 import com.demo.market.dto.user.UpdateBalanceRequest;
 import com.demo.market.dto.user.UserResponse;
@@ -27,16 +28,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse get(String userId) {
-        return userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
-                .map(userMapper::toDto)
-                .orElseThrow(InsufficientRights::new);
-    }
-
-    @Override
-    public UserResponse getByUser(String userId) {
         return userRepository.findById(userId)
                 .map(userMapper::toDto)
                 .orElseThrow(() -> new ItemNotFound(Type.USER));
+    }
+
+    @Override
+    public UserResponse getByUser(Auth auth) {
+        return userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
+                .map(userMapper::toDto)
+                .orElseThrow(InsufficientRights::new);
     }
 
     @Override
@@ -65,12 +66,12 @@ public class UserServiceImpl implements UserService {
     public UserResponse changeActiveStatus(String userId) {
         return userRepository.findById(userId)
                 .map(usr -> {
-                    boolean enabled = true;
-                    if (usr.getStatus().equals(ActiveStatus.INACTIVE)) {
-                        usr.setStatus(ActiveStatus.ACTIVE);
-                    } else {
+                    boolean enabled = false;
+                    if (usr.getStatus().equals(ActiveStatus.ACTIVE)) {
                         usr.setStatus(ActiveStatus.INACTIVE);
-                        enabled = false;
+                    } else {
+                        usr.setStatus(ActiveStatus.ACTIVE);
+                        enabled = true;
                     }
                     KeycloakUser keycloakUser = new KeycloakUser();
                     keycloakUser.setId(userId);

@@ -1,5 +1,6 @@
 package com.demo.market.service.product;
 
+import com.demo.market.dto.Auth;
 import com.demo.market.dto.product.ProductRequest;
 import com.demo.market.dto.product.ProductResponse;
 import com.demo.market.dto.purchase.PurchaseResponse;
@@ -16,7 +17,6 @@ import com.demo.market.exceptions.InsufficientRights;
 import com.demo.market.exceptions.ItemNotFound;
 import com.demo.market.exceptions.NotEnoughCredits;
 import com.demo.market.exceptions.OutdatedDiscount;
-import com.demo.market.exceptions.ProductOutOfStock;
 import com.demo.market.mappers.ProductMapper;
 import com.demo.market.mappers.PurchaseMapper;
 import com.demo.market.repository.DiscountRepository;
@@ -66,8 +66,8 @@ public class ProductServiceImpl implements ProductService {
     private Long commission;
 
     @Override
-    public PurchaseResponse buy(String userId, Long productId, Optional<Long> discountId) {
-        User user = userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+    public PurchaseResponse buy(Auth auth, Long productId, Optional<Long> discountId) {
+        User user = userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                 .orElseThrow(InsufficientRights::new);
         return productRepository.findByIdAndStatus(productId, ActiveStatus.ACTIVE)
                 .map(prd -> {
@@ -75,7 +75,7 @@ public class ProductServiceImpl implements ProductService {
                         throw new InsufficientRights();
                     }
                     if (prd.getAmount() == 0) {
-                        throw new ProductOutOfStock();
+                        throw new ItemNotFound(Type.PRODUCT);
                     }
                     Double price = prd.getPrice();
                     Long discountAmount = discountId
@@ -128,8 +128,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponse add(String userId, ProductRequest productRequest) {
-        User user = userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+    public ProductResponse add(Auth auth, ProductRequest productRequest) {
+        User user = userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                 .orElseThrow(InsufficientRights::new);
         return organizationRepository.findByIdAndStatus(productRequest.getOrganizationId(), ActiveStatus.ACTIVE)
                 .map(org -> {
@@ -145,13 +145,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponse update(Long productId, ProductRequest productRequest, String userId, Set<String> roles) {
+    public ProductResponse update(Auth auth, Long productId, ProductRequest productRequest) {
         Product product;
-        if (!roles.contains(Role.ADMIN.withPrefix())) {
+        if (!auth.getUserRoles().contains(Role.ADMIN.withPrefix())) {
             product = productRepository.findById(productId).orElseThrow(() -> new ItemNotFound(Type.PRODUCT));
-            userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+            userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                     .orElseThrow(InsufficientRights::new);
-            if (!Objects.equals(product.getOrganization().getUser().getId(), userId)) {
+            if (!Objects.equals(product.getOrganization().getUser().getId(), auth.getUserId())) {
                 throw new InsufficientRights();
             }
             if (!Objects.equals(product.getOrganization().getId(), productRequest.getOrganizationId())) {
@@ -170,21 +170,21 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponse get(Long productId) {
+    public ProductResponse get(Auth auth, Long productId) {
+        if (!auth.getUserRoles().contains(Role.ADMIN.withPrefix())) {
+            userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE).orElseThrow(InsufficientRights::new);
+        }
         return productRepository.findByIdAndStatus(productId, ActiveStatus.ACTIVE)
                 .map(productMapper::toDto)
                 .orElseThrow(() -> new ItemNotFound(Type.PRODUCT));
     }
 
     @Override
-    public Set<ProductResponse> getAll() {
+    public Set<ProductResponse> getAll(Auth auth) {
+        if (!auth.getUserRoles().contains(Role.ADMIN.withPrefix())) {
+            userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE).orElseThrow(InsufficientRights::new);
+        }
         Set<Product> products = productRepository.findAllByStatus(ActiveStatus.ACTIVE);
-        return productMapper.toDtoSet(products);
-    }
-
-    @Override
-    public Set<ProductResponse> getByOrganizationId(Long organizationId) {
-        Set<Product> products = productRepository.findAllByStatusAndOrganizationId(ActiveStatus.ACTIVE, organizationId);
         return productMapper.toDtoSet(products);
     }
 

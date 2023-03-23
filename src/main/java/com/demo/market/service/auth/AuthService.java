@@ -1,10 +1,11 @@
 package com.demo.market.service.auth;
 
-import com.demo.market.dto.auth.LoginForm;
-import com.demo.market.dto.auth.RegistrationDtoReq;
+import com.demo.market.dto.auth.LoginRequest;
+import com.demo.market.dto.auth.RegistrationRequest;
 
 public interface AuthService {
 
-    void register(RegistrationDtoReq registrationDtoReq);
-    String login(LoginForm loginForm);
+    void register(RegistrationRequest registrationRequest);
+
+    String login(LoginRequest loginRequest);
 }

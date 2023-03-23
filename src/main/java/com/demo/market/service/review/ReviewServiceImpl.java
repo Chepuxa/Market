@@ -1,8 +1,8 @@
 package com.demo.market.service.review;
 
+import com.demo.market.dto.Auth;
 import com.demo.market.dto.review.ReviewRequest;
 import com.demo.market.dto.review.ReviewResponse;
-import com.demo.market.entity.Purchase;
 import com.demo.market.entity.Review;
 import com.demo.market.entity.User;
 import com.demo.market.enums.ActiveStatus;
@@ -42,62 +42,56 @@ public class ReviewServiceImpl implements ReviewService {
     ReviewMapper reviewMapper;
 
     @Override
-    public Set<ReviewResponse> getAll(String userId) {
-        User user = userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+    public Set<ReviewResponse> getAll(Auth auth) {
+        userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                 .orElseThrow(InsufficientRights::new);
-        return reviewMapper.toDtoSet(reviewRepository.findByUserId(userId));
+        return reviewMapper.toDtoSet(reviewRepository.findByUserId(auth.getUserId()));
     }
 
     @Override
-    public ReviewResponse add(Long productId, String userId, ReviewRequest reviewRequest) {
-        User user = userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+    public ReviewResponse add(Auth auth, Long productId, ReviewRequest reviewRequest) {
+        User user = userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                 .orElseThrow(InsufficientRights::new);
         return productRepository.findById(productId)
-                .map(prd -> {
-                    Set<Purchase> purchases = purchaseRepository.findByProductId(prd.getId());
-                    if (purchases.stream().noneMatch(purchase -> purchase.getUser().getId().equals(userId))) {
-                        throw new ProductNotOwned();
-                    }
-                    if (prd.getReviews().stream().anyMatch(review -> review.getUser().getId().equals(userId))) {
-                        throw new AlreadyHasReview();
-                    }
+                .map(product -> {
+                    purchaseRepository.findByUserIdAndProductId(auth.getUserId(), product.getId())
+                            .orElseThrow(ProductNotOwned::new);
+                    reviewRepository.findByUserIdAndProductId(auth.getUserId(), product.getId())
+                            .ifPresent(review -> {
+                                throw new AlreadyHasReview();
+                            });
                     Review review = reviewMapper.toEntity(reviewRequest);
                     review.setUser(user);
-                    review.setProduct(prd);
+                    review.setProduct(product);
                     return reviewMapper.toDto(reviewRepository.save(review));
                 })
                 .orElseThrow(() -> new ItemNotFound(Type.PRODUCT));
     }
 
     @Override
-    public ReviewResponse get(Long reviewId) {
+    public ReviewResponse get(Auth auth, Long reviewId) {
+        userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
+                .orElseThrow(InsufficientRights::new);
         return reviewRepository.findById(reviewId)
                 .map(reviewMapper::toDto)
                 .orElseThrow(() -> new ItemNotFound(Type.REVIEW));
     }
 
     @Override
-    public Set<ReviewResponse> getAllWithUserId(String userId) {
+    public Set<ReviewResponse> getAllByUser(String userId) {
         return userRepository.findById(userId)
                 .map(usr -> reviewMapper.toDtoSet(reviewRepository.findByUserId(userId)))
                 .orElseThrow(() -> new ItemNotFound(Type.USER));
     }
 
     @Override
-    public Set<ReviewResponse> getAllWithProductId(Long productId) {
-        return productRepository.findByIdAndStatus(productId, ActiveStatus.ACTIVE)
-                .map(prd -> reviewMapper.toDtoSet(reviewRepository.findByProductId(productId)))
-                .orElseThrow(() -> new ItemNotFound(Type.PRODUCT));
-    }
-
-    @Override
-    public ReviewResponse update(String userId, Set<String> userRoles, Long reviewId, ReviewRequest reviewRequest) {
+    public ReviewResponse update(Auth auth, Long reviewId, ReviewRequest reviewRequest) {
         Review review;
-        if (!userRoles.contains(Role.ADMIN.withPrefix())) {
-            userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+        if (!auth.getUserRoles().contains(Role.ADMIN.withPrefix())) {
+            userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                     .orElseThrow(InsufficientRights::new);
             review = reviewRepository.findById(reviewId).orElseThrow(() -> new ItemNotFound(Type.REVIEW));
-            if (!Objects.equals(review.getUser().getId(), userId)) {
+            if (!Objects.equals(review.getUser().getId(), auth.getUserId())) {
                 throw new InsufficientRights();
             }
         } else {
@@ -110,13 +104,13 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
-    public ReviewResponse delete(String userId, Set<String> userRoles, Long reviewId) {
+    public ReviewResponse delete(Auth auth, Long reviewId) {
         Review review;
-        if (!userRoles.contains(Role.ADMIN.withPrefix())) {
-            userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+        if (!auth.getUserRoles().contains(Role.ADMIN.withPrefix())) {
+            userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                     .orElseThrow(InsufficientRights::new);
             review = reviewRepository.findById(reviewId).orElseThrow(() -> new ItemNotFound(Type.REVIEW));
-            if (!Objects.equals(review.getUser().getId(), userId)) {
+            if (!Objects.equals(review.getUser().getId(), auth.getUserId())) {
                 throw new InsufficientRights();
             }
         } else {

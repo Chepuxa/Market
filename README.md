@@ -10,3 +10,5 @@
 Логин кейклок: admin
 
 Пароль кейклок: admin_password
+
+Спецификация API доступа по пути http://localhost:80/swagger

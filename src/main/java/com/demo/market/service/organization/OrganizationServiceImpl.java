@@ -1,10 +1,12 @@
 package com.demo.market.service.organization;
 
+import com.demo.market.dto.Auth;
 import com.demo.market.dto.organization.OrganizationRequest;
 import com.demo.market.dto.organization.OrganizationResponse;
 import com.demo.market.entity.Organization;
 import com.demo.market.entity.User;
 import com.demo.market.enums.ActiveStatus;
+import com.demo.market.enums.Role;
 import com.demo.market.enums.Type;
 import com.demo.market.exceptions.InsufficientRights;
 import com.demo.market.exceptions.ItemNotFound;
@@ -31,15 +33,18 @@ public class OrganizationServiceImpl implements OrganizationService {
     OrganizationMapper organizationMapper;
 
     @Override
-    public Set<OrganizationResponse> getByUser(String userId) {
-        User user = userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+    public Set<OrganizationResponse> getByUser(Auth auth) {
+        User user = userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                 .orElseThrow(InsufficientRights::new);
         Set<Organization> organizations = organizationRepository.findAllByUserId(user.getId());
         return organizationMapper.toDtoSet(organizations);
     }
 
     @Override
-    public OrganizationResponse get(Long organizationId) {
+    public OrganizationResponse get(Auth auth, Long organizationId) {
+        if (!auth.getUserRoles().contains(Role.ADMIN.withPrefix())) {
+            userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE).orElseThrow(InsufficientRights::new);
+        }
         return organizationRepository.findById(organizationId)
                 .map(organizationMapper::toDto)
                 .orElseThrow(() -> new ItemNotFound(Type.ORGANIZATION));
@@ -52,8 +57,8 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     @Override
-    public OrganizationResponse create(String userId, OrganizationRequest organizationRequest) {
-        return userRepository.findById(userId)
+    public OrganizationResponse create(Auth auth, OrganizationRequest organizationRequest) {
+        return userRepository.findById(auth.getUserId())
                 .map(usr -> {
                     Optional<Organization> existingOrganization = organizationRepository.findByName(organizationRequest.getName());
                     existingOrganization.ifPresent(org -> {
@@ -64,7 +69,7 @@ public class OrganizationServiceImpl implements OrganizationService {
                     organization.setUser(usr);
                     return organizationMapper.toDto(organizationRepository.save(organization));
                 })
-                .orElseThrow(() -> new ItemNotFound(Type.USER));
+                .orElseThrow(InsufficientRights::new);
     }
 
     @Override

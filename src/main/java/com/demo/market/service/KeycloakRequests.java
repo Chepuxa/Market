@@ -3,8 +3,8 @@ package com.demo.market.service;
 import com.demo.market.dto.auth.ChangePasswordForm;
 import com.demo.market.dto.auth.KeycloakAuthResponse;
 import com.demo.market.dto.auth.KeycloakUser;
-import com.demo.market.dto.auth.LoginForm;
-import com.demo.market.dto.auth.RegistrationDtoReq;
+import com.demo.market.dto.auth.LoginRequest;
+import com.demo.market.dto.auth.RegistrationRequest;
 import com.demo.market.dto.auth.RoleMapping;
 import com.demo.market.enums.Type;
 import com.demo.market.exceptions.HttpClientError;
@@ -44,6 +44,7 @@ public class KeycloakRequests {
     @Value("${app.keycloak.root-secret}")
     private String rootSecret;
 
+    @SuppressWarnings("all")
     public String rootLogin() {
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED.toString());
@@ -57,13 +58,13 @@ public class KeycloakRequests {
         return response.getBody().getAccessToken();
     }
 
-    public String login(LoginForm loginForm) {
+    public String login(LoginRequest loginRequest) {
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Type", MediaType.APPLICATION_FORM_URLENCODED.toString());
         headers.add("Accept", MediaType.APPLICATION_JSON.toString());
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
-        requestBody.add("username", loginForm.getUsername());
-        requestBody.add("password", loginForm.getPassword());
+        requestBody.add("username", loginRequest.getUsername());
+        requestBody.add("password", loginRequest.getPassword());
         requestBody.add("client_id", "store_client");
         requestBody.add("grant_type", "password");
         requestBody.add("scope", "openid");
@@ -84,11 +85,12 @@ public class KeycloakRequests {
         return getUser(username).getId();
     }
 
+    @SuppressWarnings("all")
     public KeycloakUser getUser(String username) {
         String token = rootLogin();
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
-        HttpEntity<RegistrationDtoReq> userCreationRequest = new HttpEntity<>(headers);
+        HttpEntity<RegistrationRequest> userCreationRequest = new HttpEntity<>(headers);
         ResponseEntity<List<KeycloakUser>> response = restTemplate.exchange(
                 baseAdminUrl + "/users?username={username}&exact=true",
                 HttpMethod.GET,
@@ -103,7 +105,7 @@ public class KeycloakRequests {
         String token = rootLogin();
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
-        HttpEntity<RegistrationDtoReq> userCreationRequest = new HttpEntity<>(headers);
+        HttpEntity<RegistrationRequest> userCreationRequest = new HttpEntity<>(headers);
         ResponseEntity<List<RoleMapping>> response = restTemplate.exchange(
                 baseAdminUrl + "/users/{userId}/role-mappings/realm/composite",
                 HttpMethod.GET,
@@ -113,9 +115,9 @@ public class KeycloakRequests {
         return response.getBody();
     }
 
-    public void changePassword(RegistrationDtoReq registrationDtoReq, String userId) {
+    public void changePassword(RegistrationRequest registrationRequest, String userId) {
         String token = rootLogin();
-        ChangePasswordForm changePasswordForm = new ChangePasswordForm(registrationDtoReq.getPassword());
+        ChangePasswordForm changePasswordForm = new ChangePasswordForm(registrationRequest.getPassword());
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         HttpEntity<ChangePasswordForm> passwordChangeRequest = new HttpEntity<>(changePasswordForm, headers);
@@ -129,11 +131,11 @@ public class KeycloakRequests {
         assert response.getStatusCode().is2xxSuccessful();
     }
 
-    public void register(RegistrationDtoReq registrationDtoReq) {
+    public void register(RegistrationRequest registrationRequest) {
         String token = rootLogin();
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
-        HttpEntity<RegistrationDtoReq> userCreationRequest = new HttpEntity<>(registrationDtoReq, headers);
+        HttpEntity<RegistrationRequest> userCreationRequest = new HttpEntity<>(registrationRequest, headers);
         try {
             restTemplate.exchange(
                     baseAdminUrl + "/users",

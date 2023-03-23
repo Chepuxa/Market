@@ -1,5 +1,6 @@
 package com.demo.market.service.product;
 
+import com.demo.market.dto.Auth;
 import com.demo.market.dto.product.ProductRequest;
 import com.demo.market.dto.product.ProductResponse;
 import com.demo.market.dto.purchase.PurchaseResponse;
@@ -10,17 +11,15 @@ import java.util.Set;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public interface ProductService {
 
-    PurchaseResponse buy(String userId, Long productId, Optional<Long> discountId);
+    PurchaseResponse buy(Auth auth, Long productId, Optional<Long> discountId);
 
-    ProductResponse add(String userId, ProductRequest productRequest);
+    ProductResponse add(Auth auth, ProductRequest productRequest);
 
-    ProductResponse update(Long productId, ProductRequest productRequest, String userId, Set<String> userRoles);
+    ProductResponse update(Auth auth, Long productId, ProductRequest productRequest);
 
-    ProductResponse get(Long productId);
+    ProductResponse get(Auth auth, Long productId);
 
-    Set<ProductResponse> getAll();
-
-    Set<ProductResponse> getByOrganizationId(Long organizationId);
+    Set<ProductResponse> getAll(Auth auth);
 
     ProductResponse delete(Long productId);
 

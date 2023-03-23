@@ -1,6 +1,7 @@
 package com.demo.market.dto.product;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.Min;
@@ -10,6 +11,7 @@ import javax.validation.constraints.Size;
 
 
 @Data
+@Schema
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductRequest {
 

@@ -1,5 +1,6 @@
 package com.demo.market.service.notification;
 
+import com.demo.market.dto.Auth;
 import com.demo.market.dto.notification.NotificationRequest;
 import com.demo.market.dto.notification.NotificationResponse;
 import com.demo.market.entity.Notification;
@@ -31,8 +32,8 @@ public class NotificationServiceImpl implements NotificationService {
     NotificationMapper notificationMapper;
 
     @Override
-    public Set<NotificationResponse> get(String userId) {
-        User user = userRepository.findByIdAndStatus(userId, ActiveStatus.ACTIVE)
+    public Set<NotificationResponse> get(Auth auth) {
+        User user = userRepository.findByIdAndStatus(auth.getUserId(), ActiveStatus.ACTIVE)
                 .orElseThrow(InsufficientRights::new);
         return notificationMapper.toDtoSet(notificationRepository.findAllByUserId(user.getId()));
     }

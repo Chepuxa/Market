@@ -1,7 +1,7 @@
 package com.demo.market.mappers;
 
-import com.demo.market.dto.discount.DiscountDtoReq;
-import com.demo.market.dto.discount.DiscountDtoResp;
+import com.demo.market.dto.discount.DiscountRequest;
+import com.demo.market.dto.discount.DiscountResponse;
 import com.demo.market.entity.Discount;
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
@@ -19,16 +19,16 @@ public interface DiscountMapper {
     @Named("toDiscountDto")
     @Mappings({
             @Mapping(target = "products", qualifiedByName = {"ProductMapper", "toProductDto"})})
-    DiscountDtoResp toDto(Discount discount);
+    DiscountResponse toDto(Discount discount);
 
     @Named("toDiscountDtoWithoutProducts")
     @Mappings({
             @Mapping(target = "products", ignore = true)})
-    DiscountDtoResp toDtoWithoutProducts(Discount discount);
+    DiscountResponse toDtoWithoutProducts(Discount discount);
 
     @Named("toDiscountDtoSet")
     @IterableMapping(qualifiedByName = "toDiscountDto")
-    Set<DiscountDtoResp> toDtoSet(Set<Discount> discountSet);
+    Set<DiscountResponse> toDtoSet(Set<Discount> discountSet);
 
-    Discount toEntity(DiscountDtoReq discountDtoReq);
+    Discount toEntity(DiscountRequest discountRequest);
 }

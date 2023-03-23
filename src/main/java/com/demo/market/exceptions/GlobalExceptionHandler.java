@@ -1,6 +1,6 @@
 package com.demo.market.exceptions;
 
-import com.demo.market.dto.Error;
+import lombok.NonNull;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,9 +16,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @NonNull
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers,
-                                                                  HttpStatus status, WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException ex,
+                                                                  @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatus status,
+                                                                  @NonNull WebRequest request) {
         return ResponseEntity
                 .badRequest()
                 .body(Error.builder()
@@ -27,9 +30,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         .build());
     }
 
+    @NonNull
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-                                                                  HttpHeaders headers, HttpStatus status, WebRequest request) {
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(@NonNull MethodArgumentNotValidException ex,
+                                                                  @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatus status,
+                                                                  @NonNull WebRequest request) {
         return ResponseEntity
                 .badRequest()
                 .body(Error.builder()
@@ -38,8 +44,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         .build());
     }
 
+    @NonNull
     @Override
-    protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+    protected ResponseEntity<Object> handleTypeMismatch(@NonNull TypeMismatchException ex,
+                                                        @NonNull HttpHeaders headers,
+                                                        @NonNull HttpStatus status,
+                                                        @NonNull WebRequest request) {
         return ResponseEntity
                 .badRequest()
                 .body(Error.builder()
@@ -67,21 +77,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ResponseBody
-    @ExceptionHandler(ProductOutOfStock.class)
-    public ResponseEntity<Error> productOutOfStockHandler(ProductOutOfStock ex) {
-        return new ResponseEntity<>(Error.builder()
-                .code((long) HttpStatus.BAD_REQUEST.value())
-                .message(ex.getMessage())
-                .build(), HttpStatus.BAD_REQUEST);
-    }
-
-    @ResponseBody
     @ExceptionHandler(NotEnoughCredits.class)
     public ResponseEntity<Error> notEnoughCreditHandler(NotEnoughCredits ex) {
         return new ResponseEntity<>(Error.builder()
-                .code((long) HttpStatus.BAD_REQUEST.value())
+                .code((long) HttpStatus.CONFLICT.value())
                 .message(ex.getMessage())
-                .build(), HttpStatus.BAD_REQUEST);
+                .build(), HttpStatus.CONFLICT);
     }
 
     @ResponseBody
@@ -97,27 +98,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(OutdatedDiscount.class)
     public ResponseEntity<Error> outdatedDiscountHandler(OutdatedDiscount ex) {
         return new ResponseEntity<>(Error.builder()
-                .code((long) HttpStatus.BAD_REQUEST.value())
+                .code((long) HttpStatus.CONFLICT.value())
                 .message(ex.getMessage())
-                .build(), HttpStatus.BAD_REQUEST);
+                .build(), HttpStatus.CONFLICT);
     }
 
     @ResponseBody
     @ExceptionHandler(InsufficientRights.class)
     public ResponseEntity<Error> insufficientRightsHandler(InsufficientRights ex) {
         return new ResponseEntity<>(Error.builder()
-                .code((long) HttpStatus.UNAUTHORIZED.value())
+                .code((long) HttpStatus.FORBIDDEN.value())
                 .message(ex.getMessage())
-                .build(), HttpStatus.UNAUTHORIZED);
+                .build(), HttpStatus.FORBIDDEN);
     }
 
     @ResponseBody
     @ExceptionHandler(RefundTimeExpired.class)
     public ResponseEntity<Error> refundTimeExpiredHandler(RefundTimeExpired ex) {
         return new ResponseEntity<>(Error.builder()
-                .code((long) HttpStatus.BAD_REQUEST.value())
+                .code((long) HttpStatus.CONFLICT.value())
                 .message(ex.getMessage())
-                .build(), HttpStatus.BAD_REQUEST);
+                .build(), HttpStatus.CONFLICT);
     }
 
     @ResponseBody
@@ -133,9 +134,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ProductNotOwned.class)
     public ResponseEntity<Error> productNotOwnedHandler(ProductNotOwned ex) {
         return new ResponseEntity<>(Error.builder()
-                .code((long) HttpStatus.BAD_REQUEST.value())
+                .code((long) HttpStatus.FORBIDDEN.value())
                 .message(ex.getMessage())
-                .build(), HttpStatus.BAD_REQUEST);
+                .build(), HttpStatus.FORBIDDEN);
     }
 
     @ResponseBody
@@ -151,9 +152,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(UserNotActive.class)
     public ResponseEntity<Error> userNotActiveHandler(UserNotActive ex) {
         return new ResponseEntity<>(Error.builder()
-                .code((long) HttpStatus.BAD_REQUEST.value())
+                .code((long) HttpStatus.FORBIDDEN.value())
                 .message(ex.getMessage())
-                .build(), HttpStatus.BAD_REQUEST);
+                .build(), HttpStatus.FORBIDDEN);
     }
 
     @ResponseBody

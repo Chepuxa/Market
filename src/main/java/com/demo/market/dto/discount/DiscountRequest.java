@@ -1,6 +1,7 @@
 package com.demo.market.dto.discount;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.Min;
@@ -9,7 +10,8 @@ import java.sql.Timestamp;
 import java.util.Set;
 
 @Data
-public class DiscountDtoReq {
+@Schema
+public class DiscountRequest {
 
     @NotEmpty
     private Set<Long> productIds;

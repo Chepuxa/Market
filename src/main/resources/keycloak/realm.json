@@ -640,7 +640,7 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:8080/*"
+        "http://localhost:80/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -776,7 +776,7 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "yaJyXRZ0Z0S9p67Xhd3KvzeKo57VOWhh",
       "redirectUris": [
-        "http://localhost:8080/*"
+        "http://localhost:80/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -943,7 +943,7 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:8080/*"
+        "http://localhost:80/*"
       ],
       "webOrigins": [],
       "notBefore": 0,

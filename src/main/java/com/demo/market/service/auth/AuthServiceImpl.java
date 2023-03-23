@@ -1,8 +1,8 @@
 package com.demo.market.service.auth;
 
 import com.demo.market.dto.auth.KeycloakUser;
-import com.demo.market.dto.auth.LoginForm;
-import com.demo.market.dto.auth.RegistrationDtoReq;
+import com.demo.market.dto.auth.LoginRequest;
+import com.demo.market.dto.auth.RegistrationRequest;
 import com.demo.market.dto.auth.RoleMapping;
 import com.demo.market.entity.User;
 import com.demo.market.enums.ActiveStatus;
@@ -33,29 +33,29 @@ public class AuthServiceImpl implements AuthService {
     private Double balance;
 
     @Override
-    public void register(RegistrationDtoReq registrationDtoReq) {
-        Set<User> usersWithSameCredentials = userRepository.findAllByEmailOrUsername(registrationDtoReq.getEmail(), registrationDtoReq.getUsername());
+    public void register(RegistrationRequest registrationRequest) {
+        Set<User> usersWithSameCredentials = userRepository.findAllByEmailOrUsername(registrationRequest.getEmail(), registrationRequest.getUsername());
         if (!usersWithSameCredentials.isEmpty()) {
             throw new UserAlreadyExists();
         }
-        keycloakRequests.register(registrationDtoReq);
-        String userId = keycloakRequests.getUserId(registrationDtoReq.getUsername());
+        keycloakRequests.register(registrationRequest);
+        String userId = keycloakRequests.getUserId(registrationRequest.getUsername());
         User user = new User();
         user.setId(userId);
-        user.setEmail(registrationDtoReq.getEmail());
-        user.setUsername(registrationDtoReq.getUsername());
+        user.setEmail(registrationRequest.getEmail());
+        user.setUsername(registrationRequest.getUsername());
         user.setBalance(balance);
         user.setStatus(ActiveStatus.ACTIVE);
-        keycloakRequests.changePassword(registrationDtoReq, userId);
+        keycloakRequests.changePassword(registrationRequest, userId);
         userRepository.save(user);
     }
 
     @Override
-    public String login(LoginForm loginForm) {
-        KeycloakUser keycloakUser = keycloakRequests.getUser(loginForm.getUsername());
+    public String login(LoginRequest loginRequest) {
+        KeycloakUser keycloakUser = keycloakRequests.getUser(loginRequest.getUsername());
         List<RoleMapping> roleMappings = keycloakRequests.getUserRoles(keycloakUser.getId());
         if (roleMappings.stream().noneMatch(role -> role.getName().equals(Role.ADMIN.withoutPrefix()))) {
-            Optional<User> user = userRepository.findByUsername(loginForm.getUsername());
+            Optional<User> user = userRepository.findByUsername(loginRequest.getUsername());
             user.ifPresentOrElse(usr -> {
                 if (!usr.getStatus().equals(ActiveStatus.ACTIVE)) {
                     throw new UserNotActive();
@@ -64,6 +64,6 @@ public class AuthServiceImpl implements AuthService {
                 throw new InvalidCredentials();
             });
         }
-        return keycloakRequests.login(loginForm);
+        return keycloakRequests.login(loginRequest);
     }
 }
